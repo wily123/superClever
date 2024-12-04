@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Number Counting Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            background: radial-gradient(white, #857b98);// #578a8a
+            justify-content: center;
+            height: 100vh;
+        }
+		
+        #settings {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 250px;
+            padding: 20px;
+            overflow-y: auto;
+			background:linear-gradient(to right, #578a8a,#fff0);
+			z-index:98;
+        }
+		
+        #settings.open {
+            transform: translateX(0);
+        }
+		
+        #numberDisplay {
+            font-size: min(45vh, 45vw);
+            margin-top: 20px;
+            color: #183a5e;
+            opacity: 0;
+			font-weight: bold;
+        }
+
+
+.zoomEffect {
+animation: zoomEffect 0.2s ease;
+}		
+		
+@keyframes zoomEffect {
+    0% {
+        transform: scale(0);
+		opacity: 0;
+    }
+	10%{
+		transform: scale(0.5);
+		opacity: 0;
+	}
+	30%{
+		transform: scale(.7);
+		opacity: 0.4;
+	}
+    100% {
+        transform: scale(1);
+		opacity: 1;
+    }
+}
+
+		
+        #result {
+            font-size: 4em;
+            margin-top: 20px;
+            color: #183a5e;
+            transition: opacity 0.5s;
+        }
+		
+        .sameNumber {
+            color: red;
+        }
+		
+        button {
+            padding: 10px 20px;
+            font-size: 1em;
+            cursor: pointer;
+            background-color: #578a8a;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+		
+		.hidden{
+		display:none !important;
+		}
+
+		
+        #toggleSettingsButton {
+            position: fixed;
+			top:5px;
+			left:10px;
+			z-index:99;
+            background-color: #578a8a;
+            color: white;
+            border: none;
+            border-radius: 0 5px 5px 0;
+            padding: 10px 20px;
+            cursor: pointer;
+        }
+	
+		
+    </style>
+</head>
+<body>
+    <button id="toggleSettingsButton" onclick="toggleSettings()">Settings</button>
+    <div id="settings">
+	
+		<br><br>
+        <h2>Settings</h2>
+        <label>
+            <input type="checkbox" id="showEvenAsMinus" checked> Show even numbers with minus
+        </label>
+        <br>
+        <label>
+            Number of numbers to show:
+            <input type="number" id="numberLimit" value="10" min="1">
+        </label>
+        <br>
+        <label>
+            Time between numbers (ms):
+            <input type="number" id="timeBetweenNumbers" value="650" min="100">
+        </label>
+        <br>
+        <label>
+            Waiting time before result (ms):
+            <input type="number" id="waitingTime" value="3000" min="100">
+        </label>
+        <br>
+        <label>
+            Sound:<br/>
+            <select id="soundOption">
+				<option value="square" selected>Square Wave</option>
+                <option value="sine">Sine Wave</option>                
+                <option value="sawtooth">Sawtooth Wave</option>
+                <option value="triangle">Triangle Wave</option>
+            </select>
+        </label>
+		
+    </div>
+	
+	<div id="result"></div>
+    <div id="numberDisplay" ></div><br/>
+    <button onclick="startGame()" style="position: fixed;bottom: 10vh;left: 45vw;right: 45vw;">Start Game</button>
+    
+
+    <script>
+        let numbers = [];
+        let currentIndex = 0;
+        let userCount = 0;
+        let timer;
+        let audioContext;
+        let previousNumber = null;
+
+        function toggleSettings() {
+            const settingsDiv = document.getElementById('settings');
+            settingsDiv.classList.toggle('hidden');
+        }
+
+        function startGame() {
+            const numberLimit = parseInt(document.getElementById('numberLimit').value);
+            const showEvenAsMinus = document.getElementById('showEvenAsMinus').checked;
+            const timeBetweenNumbers = parseInt(document.getElementById('timeBetweenNumbers').value);
+            const waitingTime = parseInt(document.getElementById('waitingTime').value);
+
+            numbers = generateRandomNumbers(numberLimit, showEvenAsMinus);
+            currentIndex = 0;
+            userCount = 0;
+            previousNumber = null;
+            document.getElementById('numberDisplay').innerText = '';
+			document.getElementById('numberDisplay').style.color = '';
+            document.getElementById('result').innerText = '';
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            displayNextNumber(timeBetweenNumbers, waitingTime);
+			
+        }
+
+
+        function generateRandomNumbers(count, showEvenAsMinus) {
+            let nums = [];
+            for (let i = 0; i < count; i++) {
+                let num = Math.floor(Math.random() * 10) + 1;
+                if (showEvenAsMinus && num % 2 === 0) {
+                    num = -num;
+                }
+                nums.push(num);
+            }
+            return nums;
+        }
+		
+		
+
+        function displayNextNumber(timeBetweenNumbers, waitingTime) {
+            if (currentIndex < numbers.length) {
+                const numberDisplay = document.getElementById('numberDisplay');
+                const currentNumber = numbers[currentIndex];
+                numberDisplay.innerText = currentNumber;
+				numberDisplay.classList.add('zoomEffect'); 
+				
+				setTimeout(() => {
+					numberDisplay.classList.remove('zoomEffect');
+				}, 200);
+				
+                /*
+				if (currentNumber === previousNumber) {
+                    numberDisplay.classList.add('sameNumber');
+                } else {
+                    numberDisplay.classList.remove('sameNumber');
+                }
+				*/
+
+                previousNumber = currentNumber;
+                playBeep();
+                numberDisplay.style.opacity = 0;
+                numberDisplay.style.transform = 'scale(0.5)';
+                setTimeout(() => {
+                    numberDisplay.style.opacity = 1;
+                    numberDisplay.style.transform = 'scale(1)';
+                }, 10);
+
+                currentIndex++;
+                timer = setTimeout(() => displayNextNumber(timeBetweenNumbers, waitingTime), timeBetweenNumbers);
+            } else {
+                showWaitingAnimation(waitingTime);
+				numberDisplay.innerText = "";
+            }
+        }
+
+        function showWaitingAnimation(waitingTime) {
+            const resultDiv = document.getElementById('result');
+			resultDiv.innerText = "Thinking...";
+            setTimeout(() => {
+                showResult();
+            }, waitingTime); // Wait for the specified time before showing the result
+        }
+
+        function playBeep() {
+            const soundOption = document.getElementById('soundOption').value;
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            oscillator.type = soundOption;
+            oscillator.frequency.setValueAtTime(440, audioContext.currentTime); // 440 Hz (A4)
+            gainNode.gain.setValueAtTime(1, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.1);
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + 0.1);
+        }
+
+        function showResult() {
+            clearTimeout(timer);
+            const totalSum = numbers.reduce((sum, num) => sum + num, 0);
+            const resultDiv = document.getElementById('result');
+			const numberDisplay = document.getElementById('numberDisplay');
+            resultDiv.innerText = `Total Sum:`;
+			numberDisplay.innerHTML = `${totalSum}`;
+			numberDisplay.style.color = "#578a8a";
+            resultDiv.style.opacity = 1;
+        }
+    </script>
+</body>
+</html>
