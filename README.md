@@ -1,1 +1,1 @@
-**Ispired by SuperClever number countin**
+**Ispired by SuperClever number counting**
